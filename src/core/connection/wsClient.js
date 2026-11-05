@@ -10,6 +10,7 @@
 
 import { emit } from '/src/core/state/eventBus.js';
 import { getWinRate } from '/src/core/sim/simBadge.js';
+import { mountPortfolioPanel } from '/src/core/sim/simPortfolioPanel.js';
 
 // Test hook: speeds the whole simulation up (never set in the browser).
 const SPEED = (typeof globalThis.__SIM_SPEED === 'number' && globalThis.__SIM_SPEED > 0) ? globalThis.__SIM_SPEED : 1;
@@ -504,3 +505,23 @@ export function sendRequest(payload) {
 export function subscribeTicks(symbol) {
   send({ ticks: symbol, subscribe: 1 });
 }
+
+// Used by the Portfolio page's "Simulation settings" section.
+export function getSimBalance(type) {
+  return type === accountType && connected ? committedBalance : loadBalance(type);
+}
+
+export function setSimBalance(type, value) {
+  const v = round2(Math.max(0, Number(value) || 0));
+  if (type === accountType && connected) {
+    // Keep the displayed balance equal to what was typed, even if a
+    // contract is still open.
+    committedBalance = round2(v + openStakes);
+    saveBalance(type, committedBalance);
+    emitBalance();
+  } else {
+    saveBalance(type, v);
+  }
+}
+
+mountPortfolioPanel({ getBalance: getSimBalance, setBalance: setSimBalance });
